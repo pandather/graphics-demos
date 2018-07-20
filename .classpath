@@ -2,10 +2,6 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/bcel-6.3-SNAPSHOT.jar"/>
-	<classpathentry kind="lib" path="lib/jackson-annotations-2.0.4.jar"/>
-	<classpathentry kind="lib" path="lib/jackson-core-2.0.4.jar"/>
-	<classpathentry kind="lib" path="lib/jackson-databind-2.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl/lwjgl/lwjgl-natives-linux.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl/lwjgl/lwjgl-natives-macos.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl/lwjgl/lwjgl-natives-windows.jar"/>
