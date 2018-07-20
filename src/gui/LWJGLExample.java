@@ -76,6 +76,7 @@ public class LWJGLExample implements Runnable {
 		makePacman(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f);
 //		makeSphere(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f);
 //		makeGatling(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f, 9, 0.3f, 0.03f, 0.15f, 0.03f, 0.03f);
+//		makeDoubleHelix(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f, 0.1f, 0.1f);
 		
 		Pixel pixelRoot = new Pixel();
 //		makeCoolSquare(pixelRoot, maxDepth, 0);
@@ -534,6 +535,71 @@ public class LWJGLExample implements Runnable {
 					for(int zc = 0; zc < zSplit; zc++)
 						if(xc * ySplit * zSplit + yc * zSplit + zc < node.children.length && node.children[xc * ySplit * zSplit + yc * zSplit + zc] != null)
 							makeGatling(node.children[xc * ySplit * zSplit + yc * zSplit + zc], maxDepth, currDepth, x + width * xc, y + height * yc, z + depth * zc, numChambers, innerChamberDiam, innerChamberWidth, outerChamberDiam, outerChamberWidth, outerRingWidth);
+		}
+	}
+	
+	private void makeDoubleHelix(Voxel node, int maxDepth, int currDepth, float x, float y, float z, float radius, float thickness) {
+		if(maxDepth == currDepth) {
+			node.children = new Voxel[0];
+			return;
+		}
+		float width = (float) (1 / Math.pow(xSplit, currDepth));
+		float height = (float) (1 / Math.pow(ySplit, currDepth));
+		float depth = (float) (1 / Math.pow(zSplit, currDepth));
+		boolean inObject = true;
+		for(int xc = 0; xc < xSplit; xc++)
+			for(int yc = 0; yc < ySplit; yc++)
+				for(int zc = 0; zc < zSplit; zc++) {
+					float xCoord = x + width * xc, yCoord = y + height * yc, zCoord = z + depth * zc;
+					float xOffset = (float) (Math.cos(4 * Math.PI * zCoord) / 4);
+					float yOffset = (float) (Math.sin(4 * Math.PI * zCoord) / 4);
+					xCoord = xCoord + xOffset;
+					yCoord = yCoord + yOffset;
+					float coordSquaredSum = xCoord * xCoord + yCoord * yCoord;
+					double outerRadiusSquared = radius;
+					outerRadiusSquared *= outerRadiusSquared;
+					double innerRadiusSquared = radius - thickness;
+					innerRadiusSquared *= innerRadiusSquared;
+					boolean works = coordSquaredSum <= outerRadiusSquared && coordSquaredSum >= innerRadiusSquared && zCoord >= -0.5f && zCoord <= 0.5f;
+					inObject &= works;
+				}
+		if(!inObject) {
+			boolean works = true;
+			for(int xc = 0; xc < xSplit; xc++)
+				for(int yc = 0; yc < ySplit; yc++)
+					for(int zc = 0; zc < zSplit; zc++) {
+						float xCoord = x + width * xc, yCoord = y + height * yc, zCoord = z + depth * zc;
+						float xOffset = (float) (Math.cos(4 * Math.PI * zCoord) / 4);
+						float yOffset = (float) (Math.sin(4 * Math.PI * zCoord) / 4);
+						xCoord = xCoord + xOffset;
+						yCoord = yCoord + yOffset;
+						float coordSquaredSum = xCoord * xCoord + yCoord * yCoord;
+						double outerRadiusSquared = radius;
+						outerRadiusSquared *= outerRadiusSquared;
+						double innerRadiusSquared = radius - thickness;
+						innerRadiusSquared *= innerRadiusSquared;
+						works &= coordSquaredSum <= outerRadiusSquared && coordSquaredSum >= innerRadiusSquared && zCoord >= -0.5f && zCoord <= 0.5f;
+					}
+			inObject = works;
+		}
+		if(inObject) {
+			node = new Voxel();
+		} else {
+			node.children = new Voxel[xSplit * ySplit * zSplit];
+
+			currDepth++;
+
+			width = (float) (1 / Math.pow(xSplit, currDepth));
+			height = (float) (1 / Math.pow(ySplit, currDepth));
+			depth = (float) (1 / Math.pow(zSplit, currDepth));
+			
+			for(int i = 0; i < node.children.length; i++)
+				node.children[i] = new Voxel();
+			for(int xc = 0; xc < xSplit; xc++)
+				for(int yc = 0; yc < ySplit; yc++)
+					for(int zc = 0; zc < zSplit; zc++)
+						if(xc * ySplit * zSplit + yc * zSplit + zc < node.children.length && node.children[xc * ySplit * zSplit + yc * zSplit + zc] != null)
+							makeDoubleHelix(node.children[xc * ySplit * zSplit + yc * zSplit + zc], maxDepth, currDepth, x + width * xc, y + height * yc, z + depth * zc, radius, thickness);
 		}
 	}
 	
