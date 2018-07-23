@@ -1,41 +1,22 @@
+
 package gui;
 
-import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
+import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL12.*;
 import static org.lwjgl.opengl.GL13.*;
-import static org.lwjgl.opengl.GL14.*;
 import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL21.*;
 import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL31.*;
-import static org.lwjgl.opengl.GL32.*;
-import static org.lwjgl.opengl.GL33.*;
-import static org.lwjgl.opengl.GL40.*;
-import static org.lwjgl.opengl.GL41.*;
-import static org.lwjgl.opengl.GL42.*;
-import static org.lwjgl.opengl.GL43.*;
-import static org.lwjgl.opengl.GL44.*;
-import static org.lwjgl.opengl.GL45.*;
-import static org.lwjgl.opengl.GL46.*;
-import static org.lwjgl.opengl.GLUtil.*;
-import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.MemoryStack.*;
+import static org.lwjgl.system.MemoryUtil.*;
 
-import java.util.Random;
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.ShortBuffer;
+import java.nio.*;
+import java.util.*;
 
-import org.lwjgl.BufferUtils;
-import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.glfw.GLFWKeyCallback;
-import org.lwjgl.glfw.GLFWVidMode;
-import org.lwjgl.opengl.GL;
-import org.lwjgl.system.MemoryStack;
+import org.lwjgl.*;
+import org.lwjgl.glfw.*;
+import org.lwjgl.opengl.*;
+import org.lwjgl.system.*;
 
 public class LWJGLExample implements Runnable {
 	private long window;
@@ -43,13 +24,13 @@ public class LWJGLExample implements Runnable {
 	private Thread thread;
 	private boolean running = false;
 
-	private String title = "27-tree-example";
+	private String title = "octree-example";
 
 	private boolean resizable = false;
-	private int msaaSamples = 0;
+	private int msaaSamples = 4;
 
-	private int width = 1196;
-	private int height = 1196;
+	private int width = 1000;
+	private int height = 1000;
 
 	private boolean showFramerate = true;
 	long frameTimer;
@@ -58,8 +39,7 @@ public class LWJGLExample implements Runnable {
 	private double rotate_x = 0;
 	private double rotate_y = 0;
 	private double rotate_z = 0;
-
-	private int xSplit = 2, ySplit = 2, zSplit = 2;
+	
 	private int maxDepth = 10;
 	private boolean voxel = true;
 
@@ -71,15 +51,16 @@ public class LWJGLExample implements Runnable {
 
 	public void run() {
 		init();
+		
 		Voxel voxelRoot = new Voxel();
-//		makeCoolCube(voxelRoot, maxDepth, 0);
-		makePacman(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f);
+//		makeFullCube(voxelRoot, maxDepth, 0);
 //		makeSphere(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f);
+		makePacman(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f);
 //		makeGatling(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f, 9, 0.3f, 0.03f, 0.15f, 0.03f, 0.03f);
 //		makeDoubleHelix(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f, 0.1f, 0.1f);
 		
 		Pixel pixelRoot = new Pixel();
-//		makeCoolSquare(pixelRoot, maxDepth, 0);
+//		makeFullSquare(pixelRoot, maxDepth, 0);
 //		makeCircle(pixelRoot, maxDepth, 0, -0.5f, -0.5f);
 //		makePacman(pixelRoot, maxDepth, 0, -0.5f, -0.5f);
 		
@@ -91,25 +72,25 @@ public class LWJGLExample implements Runnable {
 		
 		int numVertexCoords = size * (voxel ? 24 : 4) * (voxel ? 3 : 2);
 		int numColorCoords = size * (voxel ? 24 : 4) * 3;
-		float[] floatVertices = new float[numVertexCoords];
+		short[] vertices = new short[numVertexCoords];
 		if(voxel)
-			voxelRoot.render(-0.5f, -0.5f, -0.5f, 0, new int[] { 0 }, floatVertices, xSplit, ySplit, zSplit);
+			voxelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, 0, new int[] { 0 }, vertices);
 		else
-			pixelRoot.render(-0.5f, -0.5f, 0, new int[] { 0 }, floatVertices, xSplit, ySplit);
+			pixelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, 0, new int[] { 0 }, vertices);
 		
 		ByteBuffer interleavedBuffer = BufferUtils.createByteBuffer(numVertexCoords * 2 + numColorCoords);
-		int max = 1 << Byte.SIZE, vertexOffset = 0;
+		int colorMax = 1 << Byte.SIZE, vertexOffset = 0;
 		Random rand = new Random(12345);
-		for(int quadInd = 0; quadInd < floatVertices.length / (voxel ? 3 : 2); quadInd += 4) {
+		for(int quadInd = 0; quadInd < vertices.length / (voxel ? 3 : 2); quadInd += 4) {
 			Vertex vert;
-			byte r = (byte) rand.nextInt(max);
-			byte g = (byte) rand.nextInt(max);
-			byte b = (byte) rand.nextInt(max);
+			byte r = (byte) rand.nextInt(colorMax);
+			byte g = (byte) rand.nextInt(colorMax);
+			byte b = (byte) rand.nextInt(colorMax);
 			for(byte count = 0; count < 4; count++) {
 				if(voxel)
-					vert = new Vertex(floatVertices[vertexOffset++], floatVertices[vertexOffset++], floatVertices[vertexOffset++], maxDepth, r, g, b);
+					vert = new Vertex(vertices[vertexOffset++], vertices[vertexOffset++], vertices[vertexOffset++], r, g, b);
 				else
-					vert = new Vertex(floatVertices[vertexOffset++], floatVertices[vertexOffset++], maxDepth, r, g, b);
+					vert = new Vertex(vertices[vertexOffset++], vertices[vertexOffset++], r, g, b);
 				short[] vertexCoords = vert.getVertexCoords();
 				byte[] colorValues = vert.getColors();
 				interleavedBuffer.putShort(vertexCoords[0]);
@@ -141,9 +122,11 @@ public class LWJGLExample implements Runnable {
 		glVertexPointer(voxel ? 3 : 2, GL_SHORT, voxel ? 9 : 7, 0);
 		glColorPointer(3, GL_UNSIGNED_BYTE, voxel ? 9 : 7, voxel ? 6 : 4);
 		
+		frameTimer = System.currentTimeMillis();
+		
 		while (running) {
 			update();
-			render(size * (voxel ? 24 : 4), (voxel ? 1.0 : 2.0) / ((1 << (maxDepth - 1)) - 1));
+			render(size * (voxel ? 24 : 4), (voxel ? 0.5 : 1.0) / (1 << (maxDepth - 1)));
 			printFramerate();
 			if (glfwWindowShouldClose(window))
 				running = false;
@@ -248,17 +231,17 @@ public class LWJGLExample implements Runnable {
 		glfwPollEvents();
 		if (Input.isPressed(GLFW_KEY_ESCAPE))
 			glfwSetWindowShouldClose(window, true);
-		if (Input.isPressed(GLFW_KEY_W))
+		if (Input.isDown(GLFW_KEY_W))
 			rotate_x += 0.5;
-		if (Input.isPressed(GLFW_KEY_S))
+		if (Input.isDown(GLFW_KEY_S))
 			rotate_x -= 0.5;
-		if (Input.isPressed(GLFW_KEY_A))
+		if (Input.isDown(GLFW_KEY_A))
 			rotate_y -= 0.5;
-		if (Input.isPressed(GLFW_KEY_D))
+		if (Input.isDown(GLFW_KEY_D))
 			rotate_y += 0.5;
-		if (Input.isPressed(GLFW_KEY_Q))
+		if (Input.isDown(GLFW_KEY_Q))
 			rotate_z -= 0.5;
-		if (Input.isPressed(GLFW_KEY_E))
+		if (Input.isDown(GLFW_KEY_E))
 			rotate_z += 0.5;
 		if (Input.isPressed(GLFW_KEY_F))
 			showFramerate = !showFramerate;
@@ -268,18 +251,19 @@ public class LWJGLExample implements Runnable {
 		new LWJGLExample().start();
 	}
 
+	@SuppressWarnings("unused")
 	private void makeSphere(Voxel node, int maxDepth, int currDepth, float x, float y, float z) {
 		if(maxDepth == currDepth) {
 			node.children = new Voxel[0];
 			return;
 		}
-		float width = (float) (1 / Math.pow(xSplit, currDepth));
-		float height = (float) (1 / Math.pow(ySplit, currDepth));
-		float depth = (float) (1 / Math.pow(zSplit, currDepth));
+		float width = (float) (1 / Math.pow(2, currDepth));
+		float height = (float) (1 / Math.pow(2, currDepth));
+		float depth = (float) (1 / Math.pow(2, currDepth));
 		boolean inSphere = true, anyInSphere = false;
-		for(int xc = 0; xc < xSplit; xc++)
-			for(int yc = 0; yc < ySplit; yc++)
-				for(int zc = 0; zc < zSplit; zc++) {
+		for(int xc = 0; xc < 2; xc++)
+			for(int yc = 0; yc < 2; yc++)
+				for(int zc = 0; zc < 2; zc++) {
 					float xCoord = x + width * xc, yCoord = y + height * yc, zCoord = z + depth * zc;
 					boolean works = xCoord * xCoord + yCoord * yCoord + zCoord * zCoord <= 0.25;
 					inSphere &= works;
@@ -289,98 +273,90 @@ public class LWJGLExample implements Runnable {
 			node.children = new Voxel[0];
 			return;
 		} else if(!inSphere) {
-			node.children = new Voxel[xSplit * ySplit * zSplit];
+			node.children = new Voxel[8];
 			currDepth++;
-			width = (float) (1 / Math.pow(xSplit, currDepth));
-			height = (float) (1 / Math.pow(ySplit, currDepth));
-			depth = (float) (1 / Math.pow(zSplit, currDepth));
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++)
-					for(int zc = 0; zc < zSplit; zc++) {
+			width = (float) (1 / Math.pow(2, currDepth));
+			height = (float) (1 / Math.pow(2, currDepth));
+			depth = (float) (1 / Math.pow(2, currDepth));
+			for(int xc = 0; xc < 2; xc++)
+				for(int yc = 0; yc < 2; yc++)
+					for(int zc = 0; zc < 2; zc++) {
 						float tmpX = x + width * xc;
 						float tmpY = y + height * yc;
 						float tmpZ = z + depth * zc;
 						boolean anyInSphere2 = false;
-						for(int xc2 = 0; xc2 < xSplit; xc2++)
-							for(int yc2 = 0; yc2 < ySplit; yc2++)
-								for(int zc2 = 0; zc2 < zSplit; zc2++) {
+						for(int xc2 = 0; xc2 < 2; xc2++)
+							for(int yc2 = 0; yc2 < 2; yc2++)
+								for(int zc2 = 0; zc2 < 2; zc2++) {
 									float xCoord = tmpX + width * xc2, yCoord = tmpY + height * yc2, zCoord = tmpZ + depth * zc2;
 									boolean works = xCoord * xCoord + yCoord * yCoord + zCoord * zCoord <= 0.25;
 									anyInSphere2 |= works;
 								}
 						if(anyInSphere2)
-							node.children[xc * ySplit * zSplit + yc * zSplit + zc] = new Voxel();
+							node.children[xc * 4 + yc * 2 + zc] = new Voxel();
 					}
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++)
-					for(int zc = 0; zc < zSplit; zc++)
-						if(xc * ySplit * zSplit + yc * zSplit + zc < node.children.length && node.children[xc * ySplit * zSplit + yc * zSplit + zc] != null)
-							makeSphere(node.children[xc * ySplit * zSplit + yc * zSplit + zc], maxDepth, currDepth, x + width * xc, y + height * yc, z + depth * zc);
+			for(int xc = 0; xc < 2; xc++)
+				for(int yc = 0; yc < 2; yc++)
+					for(int zc = 0; zc < 2; zc++)
+						if(xc * 4 + yc * 2 + zc < node.children.length && node.children[xc * 4 + yc * 2 + zc] != null)
+							makeSphere(node.children[xc * 4 + yc * 2 + zc], maxDepth, currDepth, x + width * xc, y + height * yc, z + depth * zc);
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private void makePacman(Voxel node, int maxDepth, int currDepth, float x, float y, float z) {
 		if(maxDepth == currDepth) {
 			node.children = new Voxel[0];
 			return;
 		}
-		float width = (float) (1 / Math.pow(xSplit, currDepth));
-		float height = (float) (1 / Math.pow(ySplit, currDepth));
-		float depth = (float) (1 / Math.pow(zSplit, currDepth));
+		float size = 1.0f / (1 << currDepth);
 		boolean inSphere = true, anyInSphere = false;
-		for(int xc = 0; xc < xSplit; xc++)
-			for(int yc = 0; yc < ySplit; yc++)
-				for(int zc = 0; zc < zSplit; zc++) {
-					float xCoord = x + width * xc, yCoord = y + height * yc, zCoord = z + depth * zc;
-					boolean works = xCoord * xCoord + yCoord * yCoord + zCoord * zCoord <= 0.25 && zCoord >= 0 && (xCoord <= 0.0 || yCoord >= xCoord || yCoord <= -xCoord);
-					inSphere &= works;
-					anyInSphere |= works;
-				}
+		for(int count = 0; count < 8; count++) {
+			float xCoord = x + size * (count / 4);
+			float yCoord = y + size * ((count / 2) % 2);
+			float zCoord = z + size * (count % 2);
+			boolean works = xCoord * xCoord + yCoord * yCoord + zCoord * zCoord <= 0.25 && zCoord >= 0 && (xCoord <= 0.0 || yCoord >= xCoord || yCoord <= -xCoord);
+			inSphere &= works;
+			anyInSphere |= works;
+		}
 		if(!anyInSphere && currDepth != 0) {
 			node.children = new Voxel[0];
 		} else if(!inSphere) {
-			node.children = new Voxel[xSplit * ySplit * zSplit];
-
-			width /= xSplit;
-			height /= ySplit;
-			depth /= zSplit;
-					
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++)
-					for(int zc = 0; zc < zSplit; zc++) {
-						float tmpX = x + width * xc;
-						float tmpY = y + height * yc;
-						float tmpZ = z + depth * zc;
-						boolean anyInSphere2 = false;
-						for(int xc2 = 0; xc2 < xSplit; xc2++)
-							for(int yc2 = 0; yc2 < ySplit; yc2++)
-								for(int zc2 = 0; zc2 < zSplit; zc2++) {
-									float xCoord = tmpX + width * xc2, yCoord = tmpY + height * yc2, zCoord = tmpZ + depth * zc2;
-									boolean works = xCoord * xCoord + yCoord * yCoord + zCoord * zCoord <= 0.25 && zCoord >= 0 && (xCoord <= 0.0 || yCoord >= xCoord || yCoord <= -xCoord);
-									anyInSphere2 |= works;
-								}
-						if(anyInSphere2)
-							node.children[xc * ySplit * zSplit + yc * zSplit + zc] = new Voxel();
-					}
+			node.children = new Voxel[8];
 			currDepth++;
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++)
-					for(int zc = 0; zc < zSplit; zc++)
-						if(xc * ySplit * zSplit + yc * zSplit + zc < node.children.length && node.children[xc * ySplit * zSplit + yc * zSplit + zc] != null)
-							makePacman(node.children[xc * ySplit * zSplit + yc * zSplit + zc], maxDepth, currDepth, x + width * xc, y + height * yc, z + depth * zc);
+			size /= 2;	
+			for(int count = 0; count < 8; count++) {
+				float tmpX = x + size * (count / 4);
+				float tmpY = y + size * ((count / 2) % 2);
+				float tmpZ = z + size * (count % 2);
+				boolean anyInSphere2 = false;
+				for(int count2 = 0; count2 < 8; count2++) {
+					float xCoord = tmpX + size * (count2 / 4), yCoord = tmpY + size * ((count2 / 2) % 2), zCoord = tmpZ + size * (count2 % 2);
+					anyInSphere2 |= xCoord * xCoord + yCoord * yCoord + zCoord * zCoord <= 0.25 && zCoord >= 0 && (xCoord <= 0.0 || yCoord >= xCoord || yCoord <= -xCoord);
+				}
+				if(anyInSphere2)
+					node.children[count] = new Voxel();
+			}
+			for (int count = 0; count < 8; count++)
+				if (node.children[count] != null)
+					makePacman(node.children[count], maxDepth, currDepth,
+							(x + size * (count / 4)),
+							(y + size * ((count / 2) % 2)),
+							(z + size * (count % 2)));
 		}
 	}
-	
+
+	@SuppressWarnings("unused")
 	private void makePacman(Pixel node, int maxDepth, int currDepth, float x, float y) {
 		if(maxDepth == currDepth) {
 			node.children = new Pixel[0];
 			return;
 		}
-		float width = (float) (1 / Math.pow(xSplit, currDepth));
-		float height = (float) (1 / Math.pow(ySplit, currDepth));
+		float width = (float) (1 / Math.pow(2, currDepth));
+		float height = (float) (1 / Math.pow(2, currDepth));
 		boolean inPac = true, anyInPac = false;
-		for(int xc = 0; xc < xSplit; xc++)
-			for(int yc = 0; yc < ySplit; yc++) {
+		for(int xc = 0; xc < 2; xc++)
+			for(int yc = 0; yc < 2; yc++) {
 				float xCoord = x + width * xc, yCoord = y + height * yc;
 				boolean works = xCoord * xCoord + yCoord * yCoord <= 0.25 && (xCoord <= 0.0 || yCoord >= xCoord || yCoord <= -xCoord);
 				inPac &= works;
@@ -389,43 +365,44 @@ public class LWJGLExample implements Runnable {
 		if(!anyInPac && currDepth != 0) {
 			node.children = new Pixel[0];
 		} else if(!inPac) {
-			node.children = new Pixel[xSplit * ySplit];
+			node.children = new Pixel[4];
 			currDepth++;
 			
-			width = (float) (1 / Math.pow(xSplit, currDepth));
-			height = (float) (1 / Math.pow(ySplit, currDepth));
+			width = (float) (1 / Math.pow(2, currDepth));
+			height = (float) (1 / Math.pow(2, currDepth));
 					
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++) {
+			for(int xc = 0; xc < 2; xc++)
+				for(int yc = 0; yc < 2; yc++) {
 					float tmpX = x + width * xc;
 					float tmpY = y + height * yc;
 					boolean anyInSphere2 = false;
-					for(int xc2 = 0; xc2 < xSplit; xc2++)
-						for(int yc2 = 0; yc2 < ySplit; yc2++) {
+					for(int xc2 = 0; xc2 < 2; xc2++)
+						for(int yc2 = 0; yc2 < 2; yc2++) {
 							float xCoord = tmpX + width * xc2, yCoord = tmpY + height * yc2;
 							boolean works = xCoord * xCoord + yCoord * yCoord <= 0.25 && (xCoord <= 0.0 || yCoord >= xCoord || yCoord <= -xCoord);
 							anyInSphere2 |= works;
 						}
 					if(anyInSphere2)
-						node.children[xc * ySplit + yc] = new Pixel();
+						node.children[2 * xc + yc] = new Pixel();
 				}
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++)
-					if(xc * ySplit + yc < node.children.length && node.children[xc * ySplit + yc] != null)
-						makePacman(node.children[xc * ySplit + yc], maxDepth, currDepth, x + width * xc, y + height * yc);
+			for(int xc = 0; xc < 2; xc++)
+				for(int yc = 0; yc < 2; yc++)
+					if(xc * 2 + yc < node.children.length && node.children[xc * 2 + yc] != null)
+						makePacman(node.children[xc * 2 + yc], maxDepth, currDepth, x + width * xc, y + height * yc);
 		}
 	}
-	
+
+	@SuppressWarnings("unused")
 	private void makeCircle(Pixel node, int maxDepth, int currDepth, float x, float y) {
 		if(maxDepth == currDepth) {
 			node.children = new Pixel[0];
 			return;
 		}
-		float width = (float) (1 / Math.pow(xSplit, currDepth));
-		float height = (float) (1 / Math.pow(ySplit, currDepth));
+		float width = (float) (1 / Math.pow(2, currDepth));
+		float height = (float) (1 / Math.pow(2, currDepth));
 		boolean inPac = true, anyInPac = false;
-		for(int xc = 0; xc < xSplit; xc++)
-			for(int yc = 0; yc < ySplit; yc++) {
+		for(int xc = 0; xc < 2; xc++)
+			for(int yc = 0; yc < 2; yc++) {
 				float xCoord = x + width * xc, yCoord = y + height * yc;
 				boolean works = xCoord * xCoord + yCoord * yCoord <= 0.25;
 				inPac &= works;
@@ -434,45 +411,46 @@ public class LWJGLExample implements Runnable {
 		if(!anyInPac && currDepth != 0) {
 			node.children = new Pixel[0];
 		} else if(!inPac) {
-			node.children = new Pixel[xSplit * ySplit];
+			node.children = new Pixel[4];
 			currDepth++;
 			
-			width = (float) (1 / Math.pow(xSplit, currDepth));
-			height = (float) (1 / Math.pow(ySplit, currDepth));
+			width = (float) (1 / Math.pow(2, currDepth));
+			height = (float) (1 / Math.pow(2, currDepth));
 					
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++) {
+			for(int xc = 0; xc < 2; xc++)
+				for(int yc = 0; yc < 2; yc++) {
 					float tmpX = x + width * xc;
 					float tmpY = y + height * yc;
 					boolean anyInSphere2 = false;
-					for(int xc2 = 0; xc2 < xSplit; xc2++)
-						for(int yc2 = 0; yc2 < ySplit; yc2++) {
+					for(int xc2 = 0; xc2 < 2; xc2++)
+						for(int yc2 = 0; yc2 < 2; yc2++) {
 							float xCoord = tmpX + width * xc2, yCoord = tmpY + height * yc2;
 							boolean works = xCoord * xCoord + yCoord * yCoord <= 0.25;
 							anyInSphere2 |= works;
 						}
 					if(anyInSphere2)
-						node.children[xc * ySplit + yc] = new Pixel();
+						node.children[2 * xc + yc] = new Pixel();
 				}
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++)
-					if(xc * ySplit + yc < node.children.length && node.children[xc * ySplit + yc] != null)
-						makeCircle(node.children[xc * ySplit + yc], maxDepth, currDepth, x + width * xc, y + height * yc);
+			for(int xc = 0; xc < 2; xc++)
+				for(int yc = 0; yc < 2; yc++)
+					if(xc * 2 + yc < node.children.length && node.children[xc * 2 + yc] != null)
+						makeCircle(node.children[xc * 2 + yc], maxDepth, currDepth, x + width * xc, y + height * yc);
 		}
 	}
-	
+
+	@SuppressWarnings("unused")
 	private void makeGatling(Voxel node, int maxDepth, int currDepth, float x, float y, float z, int numChambers, float innerChamberDiam, float innerChamberWidth, float outerChamberDiam, float outerChamberWidth, float outerRingWidth) {
 		if(maxDepth == currDepth) {
 			node.children = new Voxel[0];
 			return;
 		}
-		float width = (float) (1 / Math.pow(xSplit, currDepth));
-		float height = (float) (1 / Math.pow(ySplit, currDepth));
-		float depth = (float) (1 / Math.pow(zSplit, currDepth));
+		float width = (float) (1 / Math.pow(2, currDepth));
+		float height = (float) (1 / Math.pow(2, currDepth));
+		float depth = (float) (1 / Math.pow(2, currDepth));
 		boolean inObject = true;
-		for(int xc = 0; xc < xSplit; xc++)
-			for(int yc = 0; yc < ySplit; yc++)
-				for(int zc = 0; zc < zSplit; zc++) {
+		for(int xc = 0; xc < 2; xc++)
+			for(int yc = 0; yc < 2; yc++)
+				for(int zc = 0; zc < 2; zc++) {
 					float xCoord = x + width * xc, yCoord = y + height * yc, zCoord = z + depth * zc;
 					float coordSquaredSum = xCoord * xCoord + yCoord * yCoord;
 					float upperRad = innerChamberDiam / 2;
@@ -487,9 +465,9 @@ public class LWJGLExample implements Runnable {
 				float xOffset = (float) (Math.cos(angle) * dist) / 2;
 				float yOffset = (float) (Math.sin(angle) * dist) / 2;
 				boolean works = true;
-				for(int xc = 0; xc < xSplit; xc++)
-					for(int yc = 0; yc < ySplit; yc++)
-						for(int zc = 0; zc < zSplit; zc++) {
+				for(int xc = 0; xc < 2; xc++)
+					for(int yc = 0; yc < 2; yc++)
+						for(int zc = 0; zc < 2; zc++) {
 							float xCoord = x - xOffset + width * xc, yCoord = y - yOffset + height * yc, zCoord = z + depth * zc;
 							float coordSquaredSum = xCoord * xCoord + yCoord * yCoord;
 							float upperRad = outerChamberDiam / 2;
@@ -504,9 +482,9 @@ public class LWJGLExample implements Runnable {
 		}
 		if(!inObject) {
 			boolean works = true;
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++)
-					for(int zc = 0; zc < zSplit; zc++) {
+			for(int xc = 0; xc < 2; xc++)
+				for(int yc = 0; yc < 2; yc++)
+					for(int zc = 0; zc < 2; zc++) {
 						float xCoord = x + width * xc, yCoord = y + height * yc, zCoord = z + depth * zc;
 						float coordSquaredSum = xCoord * xCoord + yCoord * yCoord;
 						float upperRad = innerChamberDiam / 2  + outerChamberDiam + outerRingWidth;
@@ -520,36 +498,37 @@ public class LWJGLExample implements Runnable {
 		if(inObject) {
 			node = new Voxel();
 		} else {
-			node.children = new Voxel[xSplit * ySplit * zSplit];
+			node.children = new Voxel[8];
 
 			currDepth++;
 
-			width = (float) (1 / Math.pow(xSplit, currDepth));
-			height = (float) (1 / Math.pow(ySplit, currDepth));
-			depth = (float) (1 / Math.pow(zSplit, currDepth));
+			width = (float) (1 / Math.pow(2, currDepth));
+			height = (float) (1 / Math.pow(2, currDepth));
+			depth = (float) (1 / Math.pow(2, currDepth));
 			
 			for(int i = 0; i < node.children.length; i++)
 				node.children[i] = new Voxel();
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++)
-					for(int zc = 0; zc < zSplit; zc++)
-						if(xc * ySplit * zSplit + yc * zSplit + zc < node.children.length && node.children[xc * ySplit * zSplit + yc * zSplit + zc] != null)
-							makeGatling(node.children[xc * ySplit * zSplit + yc * zSplit + zc], maxDepth, currDepth, x + width * xc, y + height * yc, z + depth * zc, numChambers, innerChamberDiam, innerChamberWidth, outerChamberDiam, outerChamberWidth, outerRingWidth);
+			for(int xc = 0; xc < 2; xc++)
+				for(int yc = 0; yc < 2; yc++)
+					for(int zc = 0; zc < 2; zc++)
+						if(xc * 4 + yc * 2 + zc < node.children.length && node.children[xc * 4 + yc * 2 + zc] != null)
+							makeGatling(node.children[xc * 4 + yc * 2 + zc], maxDepth, currDepth, x + width * xc, y + height * yc, z + depth * zc, numChambers, innerChamberDiam, innerChamberWidth, outerChamberDiam, outerChamberWidth, outerRingWidth);
 		}
 	}
-	
+
+	@SuppressWarnings("unused")
 	private void makeDoubleHelix(Voxel node, int maxDepth, int currDepth, float x, float y, float z, float radius, float thickness) {
 		if(maxDepth == currDepth) {
 			node.children = new Voxel[0];
 			return;
 		}
-		float width = (float) (1 / Math.pow(xSplit, currDepth));
-		float height = (float) (1 / Math.pow(ySplit, currDepth));
-		float depth = (float) (1 / Math.pow(zSplit, currDepth));
+		float width = (float) (1 / Math.pow(2, currDepth));
+		float height = (float) (1 / Math.pow(2, currDepth));
+		float depth = (float) (1 / Math.pow(2, currDepth));
 		boolean inObject = true;
-		for(int xc = 0; xc < xSplit; xc++)
-			for(int yc = 0; yc < ySplit; yc++)
-				for(int zc = 0; zc < zSplit; zc++) {
+		for(int xc = 0; xc < 2; xc++)
+			for(int yc = 0; yc < 2; yc++)
+				for(int zc = 0; zc < 2; zc++) {
 					float xCoord = x + width * xc, yCoord = y + height * yc, zCoord = z + depth * zc;
 					float xOffset = (float) (Math.cos(4 * Math.PI * zCoord) / 4);
 					float yOffset = (float) (Math.sin(4 * Math.PI * zCoord) / 4);
@@ -565,9 +544,9 @@ public class LWJGLExample implements Runnable {
 				}
 		if(!inObject) {
 			boolean works = true;
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++)
-					for(int zc = 0; zc < zSplit; zc++) {
+			for(int xc = 0; xc < 2; xc++)
+				for(int yc = 0; yc < 2; yc++)
+					for(int zc = 0; zc < 2; zc++) {
 						float xCoord = x + width * xc, yCoord = y + height * yc, zCoord = z + depth * zc;
 						float xOffset = (float) (Math.cos(4 * Math.PI * zCoord) / 4);
 						float yOffset = (float) (Math.sin(4 * Math.PI * zCoord) / 4);
@@ -585,129 +564,68 @@ public class LWJGLExample implements Runnable {
 		if(inObject) {
 			node = new Voxel();
 		} else {
-			node.children = new Voxel[xSplit * ySplit * zSplit];
+			node.children = new Voxel[8];
 
 			currDepth++;
 
-			width = (float) (1 / Math.pow(xSplit, currDepth));
-			height = (float) (1 / Math.pow(ySplit, currDepth));
-			depth = (float) (1 / Math.pow(zSplit, currDepth));
+			width = (float) (1 / Math.pow(2, currDepth));
+			height = (float) (1 / Math.pow(2, currDepth));
+			depth = (float) (1 / Math.pow(2, currDepth));
 			
 			for(int i = 0; i < node.children.length; i++)
 				node.children[i] = new Voxel();
-			for(int xc = 0; xc < xSplit; xc++)
-				for(int yc = 0; yc < ySplit; yc++)
-					for(int zc = 0; zc < zSplit; zc++)
-						if(xc * ySplit * zSplit + yc * zSplit + zc < node.children.length && node.children[xc * ySplit * zSplit + yc * zSplit + zc] != null)
-							makeDoubleHelix(node.children[xc * ySplit * zSplit + yc * zSplit + zc], maxDepth, currDepth, x + width * xc, y + height * yc, z + depth * zc, radius, thickness);
+			for(int xc = 0; xc < 2; xc++)
+				for(int yc = 0; yc < 2; yc++)
+					for(int zc = 0; zc < 2; zc++)
+						if(xc * 4 + yc * 2 + zc < node.children.length && node.children[xc * 4 + yc * 2 + zc] != null)
+							makeDoubleHelix(node.children[xc * 4 + yc * 2 + zc], maxDepth, currDepth, x + width * xc, y + height * yc, z + depth * zc, radius, thickness);
 		}
 	}
-	
-	private void makeCoolSquare(Pixel node, int maxDepth, int currDepth) {
+
+	@SuppressWarnings("unused")
+	private void makeFullSquare(Pixel node, int maxDepth, int currDepth) {
 		if (node == null || maxDepth == currDepth)
 			return;
-		node.children = new Pixel[xSplit * ySplit];
+		node.children = new Pixel[4];
 
-		node.createChild(0, 0, ySplit);
-		node.createChild(0, 1, ySplit);
-		node.createChild(1, 0, ySplit);
-		node.createChild(1, 1, ySplit);
-		
-//		// for 3x3
-//		node.createChild(0, 0, ySplit);
-//		node.createChild(0, 1, ySplit);
-//		node.createChild(0, 2, ySplit);
-//		node.createChild(1, 0, ySplit);
-//		node.createChild(1, 2, ySplit);
-//		node.createChild(2, 0, ySplit);
-//		node.createChild(2, 1, ySplit);
-//		node.createChild(2, 2, ySplit);
+		node.children[0] = new Pixel();
+		node.children[1] = new Pixel();
+		node.children[2] = new Pixel();
+		node.children[3] = new Pixel();
 
 		currDepth++;
 		for (Pixel pix : node.children)
-			makeCoolSquare(pix, maxDepth, currDepth);
+			makeFullSquare(pix, maxDepth, currDepth);
 	}
-	
-	private void makeCoolCube(Voxel node, int maxDepth, int currDepth) {
+
+	@SuppressWarnings("unused")
+	private void makeFullCube(Voxel node, int maxDepth, int currDepth) {
 		if (node == null || maxDepth == currDepth)
 			return;
-		node.children = new Voxel[xSplit * ySplit * zSplit];
-		// void tree
-//		node.children[0] = new Voxel();
-//		node.children[2] = new Voxel();
-//		node.children[6] = new Voxel();
-//		node.children[8] = new Voxel();
-//		node.children[18] = new Voxel();
-//		node.children[20] = new Voxel();
-//		node.children[24] = new Voxel();
-//		node.children[26] = new Voxel();
-//		node.children[13] = new Voxel();
-
-		 node.children[0] = new Voxel();
-		 node.children[1] = new Voxel();
-		 node.children[2] = new Voxel();
-		 node.children[3] = new Voxel();
-		 node.children[4] = new Voxel();
-		 node.children[5] = new Voxel();
-		 node.children[6] = new Voxel();
-		 node.children[7] = new Voxel();
-
-		// cluster sponge
-		// node.children[0][0][0] = new Voxel();
-		// node.children[0][0][2] = new Voxel();
-		// node.children[0][2][0] = new Voxel();
-		// node.children[0][2][2] = new Voxel();
-		// node.children[2][0][0] = new Voxel();
-		// node.children[2][0][2] = new Voxel();
-		// node.children[2][2][0] = new Voxel();
-		// node.children[2][2][2] = new Voxel();
-
-		// // void sponge
-		// node.children[0][0][0] = new Voxel();
-		// node.children[0][0][1] = new Voxel();
-		// node.children[0][0][2] = new Voxel();
-		// node.children[0][1][0] = new Voxel();
-		// //node.children[0][1][1] = new Voxel();
-		// node.children[0][1][2] = new Voxel();
-		// node.children[0][2][0] = new Voxel();
-		// node.children[0][2][1] = new Voxel();
-		// node.children[0][2][2] = new Voxel();
-		//
-		// node.children[1][0][0] = new Voxel();
-		// //node.children[1][0][1] = new Voxel();
-		// node.children[1][0][2] = new Voxel();
-		// //node.children[1][1][0] = new Voxel();
-		// //node.children[1][1][1] = new Voxel();
-		// //node.children[1][1][2] = new Voxel();
-		// node.children[1][2][0] = new Voxel();
-		// //node.children[1][2][1] = new Voxel();
-		// node.children[1][2][2] = new Voxel();
-		//
-		// node.children[2][0][0] = new Voxel();
-		// node.children[2][0][1] = new Voxel();
-		// node.children[2][0][2] = new Voxel();
-		// node.children[2][1][0] = new Voxel();
-		// //node.children[2][1][1] = new Voxel();
-		// node.children[2][1][2] = new Voxel();
-		// node.children[2][2][0] = new Voxel();
-		// node.children[2][2][1] = new Voxel();
-		// node.children[2][2][2] = new Voxel();
+		node.children = new Voxel[8];
+		
+		node.children[0] = new Voxel();
+		node.children[1] = new Voxel();
+		node.children[2] = new Voxel();
+		node.children[3] = new Voxel();
+		node.children[4] = new Voxel();
+		node.children[5] = new Voxel();
+		node.children[6] = new Voxel();
+		node.children[7] = new Voxel();
 
 		currDepth++;
 		for (Voxel vox : node.children)
-			makeCoolCube(vox, maxDepth, currDepth);
+			makeFullCube(vox, maxDepth, currDepth);
 	}
 }
 
 class Voxel {
 	Voxel[] children;
 
-	void render(float x, float y, float z, int treeDepth, int[] num, float[] vertices, int xSplit, int ySplit, int zSplit) {
-		float width = (float) (1 / Math.pow(xSplit, treeDepth));
-		float height = (float) (1 / Math.pow(ySplit, treeDepth));
-		float depth = (float) (1 / Math.pow(zSplit, treeDepth));
+	void render(short x, short y, short z, int maxDepth, int treeDepth, int[] num, short[] vertices) {
+		short size = (short) (1 << (maxDepth - treeDepth));
 		if (children == null) {
-			float xw = x + width, yh = y + height, zd = z + depth;
+			short xw = (short) (x + size), yh = (short) (y + size), zd = (short) (z + size);
 			// back face
 			vertices[num[0]++] = x;
 			vertices[num[0]++] = y;
@@ -791,77 +709,26 @@ class Voxel {
 			vertices[num[0]++] = xw;
 			vertices[num[0]++] = yh;
 			vertices[num[0]++] = z;
-
-//			//triangle strip, 15 vertices
-//			vertices[num[0]++] = x;
-//			vertices[num[0]++] = yh;
-//			vertices[num[0]++] = zd;
-//			vertices[num[0]++] = xw;
-//			vertices[num[0]++] = yh;
-//			vertices[num[0]++] = zd;
-//			vertices[num[0]++] = x;
-//			vertices[num[0]++] = y;
-//			vertices[num[0]++] = zd;
-//			vertices[num[0]++] = xw;
-//			vertices[num[0]++] = y;
-//			vertices[num[0]++] = zd;
-//			vertices[num[0]++] = xw;
-//			vertices[num[0]++] = y;
-//			vertices[num[0]++] = z;
-//			vertices[num[0]++] = xw;
-//			vertices[num[0]++] = yh;
-//			vertices[num[0]++] = zd;
-//			vertices[num[0]++] = xw;
-//			vertices[num[0]++] = yh;
-//			vertices[num[0]++] = z;
-//			vertices[num[0]++] = x;
-//			vertices[num[0]++] = yh;
-//			vertices[num[0]++] = zd;
-//			vertices[num[0]++] = x;
-//			vertices[num[0]++] = yh;
-//			vertices[num[0]++] = z;
-//			vertices[num[0]++] = x;
-//			vertices[num[0]++] = y;
-//			vertices[num[0]++] = zd;
-//			vertices[num[0]++] = x;
-//			vertices[num[0]++] = y;
-//			vertices[num[0]++] = z;
-//			vertices[num[0]++] = xw;
-//			vertices[num[0]++] = y;
-//			vertices[num[0]++] = z;
-//			vertices[num[0]++] = x;
-//			vertices[num[0]++] = yh;
-//			vertices[num[0]++] = z;
-//			vertices[num[0]++] = xw;
-//			vertices[num[0]++] = yh;
-//			vertices[num[0]++] = z;
-//			vertices[num[0]++] = x;
-//			vertices[num[0]++] = yh;
-//			vertices[num[0]++] = zd;
 			return;
 		}
+		if(children.length == 0)
+			return;
 		treeDepth++;
-		width = (float) (1 / Math.pow(xSplit, treeDepth));
-		height = (float) (1 / Math.pow(ySplit, treeDepth));
-		depth = (float) (1 / Math.pow(zSplit, treeDepth));
-		for (int count = 0; count < xSplit * ySplit * zSplit; count++)
-			if (count < children.length && children[count] != null)
-				children[count].render((x + width * (count / (ySplit * zSplit))),
-						(y + height * ((count / zSplit) % ySplit)),
-						(z + depth * (count % zSplit)),
-						treeDepth, num, vertices, xSplit, ySplit, zSplit);
-	}
-
-	void createChild(int x, int y, int z, int ySplit, int zSplit) {
-		children[x * ySplit * zSplit + y * zSplit * z] = new Voxel();
+		size >>= 1;
+		for (int count = 0; count < 8; count++)
+			if (children[count] != null)
+				children[count].render((short) (x + size * (count / 4)),
+						(short) (y + size * ((count / 2) % 2)),
+						(short) (z + size * (count % 2)),
+						maxDepth, treeDepth, num, vertices);
 	}
 
 	int size() {
-		if (children == null)
+		if(children == null)
 			return 1;
 		int sum = 0;
-		for (Voxel vox : children)
-			if (vox != null)
+		for(Voxel vox : children)
+			if(vox != null)
 				sum += vox.size();
 		return sum;
 	}
@@ -870,11 +737,10 @@ class Voxel {
 class Pixel {
 	Pixel[] children;
 
-	void render(float x, float y, int treeDepth, int[] num, float[] vertices, int xSplit, int ySplit) {
-		float width = (float) (1 / Math.pow(xSplit, treeDepth));
-		float height = (float) (1 / Math.pow(ySplit, treeDepth));
+	void render(short x, short y, int maxDepth, int treeDepth, int[] num, short[] vertices) {
+		short size = (short) (1 << (maxDepth - treeDepth));
 		if (children == null) {
-			float xw = x + width, yh = y + height;
+			short xw = (short) (x + size), yh = (short) (y + size);
 			vertices[num[0]++] = x;
 			vertices[num[0]++] = y;
 			vertices[num[0]++] = xw;
@@ -886,26 +752,21 @@ class Pixel {
 			return;
 		}
 		treeDepth++;
-		width = (float) (1 / Math.pow(xSplit, treeDepth));
-		height = (float) (1 / Math.pow(ySplit, treeDepth));
-		for(int xc = 0; xc < xSplit; xc++)
-			for(int yc = 0; yc < ySplit; yc++)
-				if ((xc * ySplit + yc) < children.length && children[(xc * ySplit + yc)] != null)
-					children[(xc * ySplit + yc)].render(x + width * xc,
-							y + height * yc,
-							treeDepth, num, vertices, xSplit, ySplit);
-	}
-
-	void createChild(int x, int y, int ySplit) {
-		children[x * ySplit + y] = new Pixel();
+		size >>= 1;
+		byte min = (byte) Math.min(4, children.length);
+		for (byte count = 0; count < min; count++)
+			if (children[count] != null)
+				children[count].render((short) (x + size * (count / 2)),
+						(short) (y + size * (count % 2)),
+						maxDepth, treeDepth, num, vertices);
 	}
 
 	int size() {
 		if (children == null)
 			return 1;
 		int sum = 0;
-		for (Pixel pix : children)
-			if (pix != null)
+		for(Pixel pix : children)
+			if(pix != null)
 				sum += pix.size();
 		return sum;
 	}
@@ -923,14 +784,6 @@ class Vertex {
 		vertexCoords = new short[] {x, y, z};
 		colors = new byte[] {r, g, b};
 	}
-	
-	public Vertex(float x, float y, float z, int maxDepth, byte r, byte g, byte b) {
-		this((short) Math.round(x * ((1 << (maxDepth - 1)) - 1)), (short) Math.round(y * ((1 << (maxDepth - 1)) - 1)), (short) Math.round(z * ((1 << (maxDepth - 1)) - 1)), r, g, b);
-	}
-	
-	public Vertex(float x, float y, float z, int maxDepth) {
-		this(x, y, z, maxDepth, (byte) (Math.random() * (1 << 8)), (byte) (Math.random() * (1 << 8)), (byte) (Math.random() * (1 << 8)));
-	}
 
 	public Vertex(short x, short y) {
 		this(x, y, (byte) (Math.random() * (1 << 8)), (byte) (Math.random() * (1 << 8)), (byte) (Math.random() * (1 << 8)));
@@ -939,14 +792,6 @@ class Vertex {
 	public Vertex(short x, short y, byte r, byte g, byte b) {
 		vertexCoords = new short[] {x, y};
 		colors = new byte[] {r, g, b};
-	}
-	
-	public Vertex(float x, float y, int maxDepth, byte r, byte g, byte b) {
-		this((short) Math.round(x * ((1 << (maxDepth - 1)) - 1)), (short) Math.round(y * ((1 << (maxDepth - 1)) - 1)), r, g, b);
-	}
-	
-	public Vertex(float x, float y, int maxDepth) {
-		this(x, y, maxDepth, (byte) (Math.random() * (1 << 8)), (byte) (Math.random() * (1 << 8)), (byte) (Math.random() * (1 << 8)));
 	}
 	
 	public short[] getVertexCoords() {
@@ -959,13 +804,22 @@ class Vertex {
 }
 
 class Input extends GLFWKeyCallback {
-	private static boolean[] keys = new boolean[65536];
+	private static boolean[] pressed = new boolean[65536], repeated = new boolean[65536];
 
 	public void invoke(long window, int key, int scancode, int action, int mods) {
-		keys[key] = action != GLFW_RELEASE;
+		pressed[key] = action == GLFW_PRESS;
+		repeated[key] = action == GLFW_REPEAT;
 	}
 
 	public static boolean isPressed(int key) {
-		return keys[key];
+		return pressed[key];
+	}
+	
+	public static boolean isRepeated(int key) {
+		return repeated[key];
+	}
+	
+	public static boolean isDown(int key) {
+		return isPressed(key) || isRepeated(key);
 	}
 }
