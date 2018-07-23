@@ -715,12 +715,23 @@ class Voxel {
 			return;
 		treeDepth++;
 		size >>= 1;
-		for (int count = 0; count < 8; count++)
-			if (children[count] != null)
-				children[count].render((short) (x + size * (count / 4)),
-						(short) (y + size * ((count / 2) % 2)),
-						(short) (z + size * (count % 2)),
-						maxDepth, treeDepth, num, vertices);
+		short xw = (short) (x + size), yh = (short) (y + size), zd = (short) (z + size);
+		if (children[0] != null)
+			children[0].render(x, y, z, maxDepth, treeDepth, num, vertices);
+		if (children[1] != null)
+			children[1].render(x, y, zd, maxDepth, treeDepth, num, vertices);
+		if (children[2] != null)
+			children[2].render(x, yh, z, maxDepth, treeDepth, num, vertices);
+		if (children[3] != null)
+			children[3].render(x, yh, zd, maxDepth, treeDepth, num, vertices);
+		if (children[4] != null)
+			children[4].render(xw, y, z, maxDepth, treeDepth, num, vertices);
+		if (children[5] != null)
+			children[5].render(xw, y, zd, maxDepth, treeDepth, num, vertices);
+		if (children[6] != null)
+			children[6].render(xw, yh, z, maxDepth, treeDepth, num, vertices);
+		if (children[7] != null)
+			children[7].render(xw, yh, zd, maxDepth, treeDepth, num, vertices);
 	}
 
 	int size() {
@@ -751,14 +762,19 @@ class Pixel {
 			vertices[num[0]++] = yh;
 			return;
 		}
+		if (children.length == 0)
+			return;
 		treeDepth++;
 		size >>= 1;
-		byte min = (byte) Math.min(4, children.length);
-		for (byte count = 0; count < min; count++)
-			if (children[count] != null)
-				children[count].render((short) (x + size * (count / 2)),
-						(short) (y + size * (count % 2)),
-						maxDepth, treeDepth, num, vertices);
+		short xw = (short) (x + size), yh = (short) (y + size);
+		if (children[0] != null)
+			children[0].render(x, y, maxDepth, treeDepth, num, vertices);
+		if (children[1] != null)
+			children[1].render(x, yh, maxDepth, treeDepth, num, vertices);
+		if (children[2] != null)
+			children[2].render(xw, y, maxDepth, treeDepth, num, vertices);
+		if (children[3] != null)
+			children[3].render(xw, yh, maxDepth, treeDepth, num, vertices);
 	}
 
 	int size() {
