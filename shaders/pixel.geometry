@@ -1,0 +1,26 @@
+#version 460
+
+uniform mat4 FactorMatrix;
+
+layout(points) in;
+layout(triangle_strip, max_vertices=4) out;
+
+in int size[];
+
+void main(void)
+{	
+	ivec4 bottomLeft = ivec4(0, 0, 0, 0);
+	ivec4 bottomRight = ivec4(size[0], 0, 0, 0);
+	ivec4 topRight = ivec4(size[0], size[0], 0, 0);
+	ivec4 topLeft = ivec4(0, size[0], 0, 0);
+	
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + topLeft);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + bottomLeft);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + topRight);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + bottomRight);
+	EmitVertex();
+	EndPrimitive();
+}

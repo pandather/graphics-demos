@@ -2,79 +2,20 @@
 package gui;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
-import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_E;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_F;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_Q;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_S;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_W;
-import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
-import static org.lwjgl.glfw.GLFW.GLFW_REPEAT;
-import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
-import static org.lwjgl.glfw.GLFW.GLFW_SAMPLES;
-import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
-import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
-import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
-import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
-import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
-import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
-import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
-import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
-import static org.lwjgl.glfw.GLFW.glfwInit;
-import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
-import static org.lwjgl.glfw.GLFW.glfwPollEvents;
-import static org.lwjgl.glfw.GLFW.glfwSetErrorCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
-import static org.lwjgl.glfw.GLFW.glfwShowWindow;
-import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
-import static org.lwjgl.glfw.GLFW.glfwTerminate;
-import static org.lwjgl.glfw.GLFW.glfwWindowHint;
-import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
-import static org.lwjgl.opengl.GL11.GL_COLOR_ARRAY;
-import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
-import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
-import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
-import static org.lwjgl.opengl.GL11.GL_PROJECTION;
-import static org.lwjgl.opengl.GL11.GL_QUADS;
-import static org.lwjgl.opengl.GL11.GL_SHORT;
-import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
-import static org.lwjgl.opengl.GL11.GL_VERTEX_ARRAY;
-import static org.lwjgl.opengl.GL11.glClear;
-import static org.lwjgl.opengl.GL11.glClearColor;
-import static org.lwjgl.opengl.GL11.glColorPointer;
-import static org.lwjgl.opengl.GL11.glDisableClientState;
-import static org.lwjgl.opengl.GL11.glDrawArrays;
-import static org.lwjgl.opengl.GL11.glEnable;
-import static org.lwjgl.opengl.GL11.glFlush;
-import static org.lwjgl.opengl.GL11.glLoadIdentity;
-import static org.lwjgl.opengl.GL11.glMatrixMode;
-import static org.lwjgl.opengl.GL11.glRotated;
-import static org.lwjgl.opengl.GL11.glScaled;
-import static org.lwjgl.opengl.GL11.glVertexPointer;
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_MULTISAMPLE;
-import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.GL_DYNAMIC_DRAW;
-import static org.lwjgl.opengl.GL15.glBindBuffer;
-import static org.lwjgl.opengl.GL15.glBufferData;
-import static org.lwjgl.opengl.GL15.glBufferSubData;
-import static org.lwjgl.opengl.GL15.glGenBuffers;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-import java.nio.ShortBuffer;
+import java.nio.*;
 
+import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.glfw.GLFWKeyCallback;
-import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 
@@ -87,7 +28,7 @@ public class LWJGLExample implements Runnable {
 	private String title = "octree-example";
 
 	private boolean resizable = false;
-	private int msaaSamples = 4;
+//	private int msaaSamples = 4;
 
 	private int width = 1000;
 	private int height = 1000;
@@ -102,8 +43,8 @@ public class LWJGLExample implements Runnable {
 	private double rotate_y = 0;
 	private double rotate_z = 0;
 	
-	private int maxDepth = 9;
-	private boolean voxel = false;
+	private byte maxDepth = 11;
+	private boolean voxel = true;
 
 	public void start() {
 		running = true;
@@ -118,8 +59,8 @@ public class LWJGLExample implements Runnable {
 		
 		Voxel voxelRoot = new Voxel();
 //		makeFullCube(voxelRoot, maxDepth, 0);
-//		makeSphere(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f);
-//		makeMovingPacman(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f, 0);
+		makeSphere(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f);
+//		makePacman(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f);
 //		makeGatling(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f, 9, 0.3f, 0.03f, 0.15f, 0.03f, 0.03f);
 //		makeDoubleHelix(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f, 0.1f, 0.1f);
 		
@@ -127,90 +68,104 @@ public class LWJGLExample implements Runnable {
 //		makeFullSquare(pixelRoot, maxDepth, 0);
 //		makeCircle(pixelRoot, maxDepth, 0, -0.5f, -0.5f);
 //		makePacman(pixelRoot, maxDepth, 0, -0.5f, -0.5f);
-		makeMovingPacman(pixelRoot, maxDepth, 0, -0.5f, -0.5f, 0);
 		
-//		byte[] data = new byte[Integer.MAX_VALUE];
-//		ByteBuffer interleavedBuffer = BufferUtils.createByteBuffer(Integer.MAX_VALUE);
 		short vertices[] = new short[(int) (Integer.MAX_VALUE * ((voxel ? 6.0 : 4.0) / (voxel ? 9 : 7) / 2)) / 2];
-		byte colors[] = new byte[(int) (Integer.MAX_VALUE * (3.0 / (voxel ? 9 : 7))) / 2];
-
-		int sizes[] = null;
+		byte depths[] = new byte[vertices.length / (voxel ? 3 : 2)];
+		int lengths[] = null;
+		
 		if(voxel)
-			voxelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, 0, vertices, colors, sizes = new int[] {0, 0});
+			voxelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, (byte) 0, vertices, depths, lengths = new int[] {0, 0});
 		else
-			pixelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, 0, vertices, colors, sizes = new int[] {0, 0});
-
+			pixelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, (byte) 0, vertices, depths, lengths = new int[] {0, 0});
+				
 		ShortBuffer verticesBuffer = BufferUtils.createShortBuffer(vertices.length);
-		verticesBuffer.put(vertices, 0, sizes[0]);
-		verticesBuffer.flip();
+		ByteBuffer depthsBuffer = BufferUtils.createByteBuffer(depths.length);
 		
-		ByteBuffer colorsBuffer = BufferUtils.createByteBuffer(colors.length);
-		colorsBuffer.put(colors, 0, sizes[1]);
-		colorsBuffer.flip();
-		
-		int quads = sizes[1] / 12;
+		int nodes = lengths[1];
 
-		System.out.println((voxel ? "Voxels: " : "Pixels: ") + quads / (voxel ? 6 : 1));
-		System.out.println("Quads: " + quads);
+		System.out.println((voxel ? "Voxels: " : "Pixels: ") + nodes);
 		
-		glEnable(GL_MULTISAMPLE);
-		glEnable(GL_VERTEX_ARRAY);
-		glEnable(GL_COLOR_ARRAY);
-
-//		 float[] lightPos = { 1.0f, 1.0f, 1.0f, 0.0f };
-//		 float[] lightColor = { 1.0f, 0.0f, 1.0f, 1.0f };
-//		 glLightfv(GL_LIGHT0, GL_POSITION,
-//				 (FloatBuffer) BufferUtils.createFloatBuffer(lightPos.length).put(lightPos).flip());
-//		 glLightfv(GL_LIGHT0, GL_AMBIENT,
-//				 (FloatBuffer) BufferUtils.createFloatBuffer(lightPos.length).put(lightColor).flip());
-//		 glEnable(GL_LIGHTING);
-//		 glEnable(GL_LIGHT0);
+		int vaoID = glGenVertexArrays();
+		glBindVertexArray(vaoID);
 		
 		int vboID = glGenBuffers();
 		glBindBuffer(GL_ARRAY_BUFFER, vboID);
+		glBufferData(GL_ARRAY_BUFFER, verticesBuffer.limit() * 2 + depthsBuffer.limit(), GL_DYNAMIC_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, verticesBuffer);
+		glBufferSubData(GL_ARRAY_BUFFER, verticesBuffer.limit() * 2, depthsBuffer);
+		
+		Shader shader;
+		if(voxel)
+			shader = new Shader("shaders/voxel.vertex", "shaders/voxel.geometry", "shaders/both.fragment");
+		else
+			shader = new Shader("shaders/pixel.vertex", "shaders/pixel.geometry", "shaders/both.fragment");
+		
+		glUseProgram(shader.getProgramID());
+		int positionAttrib = glGetAttribLocation(shader.getProgramID(), "position");
+		glEnableVertexAttribArray(positionAttrib);
+		glVertexAttribPointer(positionAttrib, voxel ? 3 : 2, GL_SHORT, false, 0, 0);
+		
+		int depthAttrib = glGetAttribLocation(shader.getProgramID(), "depth");
+		glEnableVertexAttribArray(depthAttrib);
+		glVertexAttribIPointer(depthAttrib, 1, GL_BYTE, 0, verticesBuffer.limit() * 2);
 		
 		frameTimer = startTimer = System.currentTimeMillis();
+		Matrix4f projection;
+		FloatBuffer projectionMatrixBuffer = BufferUtils.createFloatBuffer(16);
+		int factorMatrixLoc = glGetUniformLocation(shader.getProgramID(), "FactorMatrix");
 
 		while (running) {
-			glBufferData(GL_ARRAY_BUFFER, 2 * verticesBuffer.limit() + colorsBuffer.limit(), GL_DYNAMIC_DRAW);
+			nodes = lengths[1];
+			
+			verticesBuffer.clear();
+			verticesBuffer.put(vertices, 0, lengths[0]);
+			verticesBuffer.flip();
+			
+			depthsBuffer.clear();
+			depthsBuffer.put(depths, 0, lengths[1]);
+			depthsBuffer.flip();
+			
+			glBindBuffer(GL_ARRAY_BUFFER, vboID);
+			glBufferData(GL_ARRAY_BUFFER, verticesBuffer.limit() * 2 + depthsBuffer.limit(), GL_DYNAMIC_DRAW);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, verticesBuffer);
-			glBufferSubData(GL_ARRAY_BUFFER, 2 * verticesBuffer.limit(), colorsBuffer);
-			glVertexPointer(voxel ? 3 : 2, GL_SHORT, 0, 0);
-			glColorPointer(3, GL_UNSIGNED_BYTE, 0, 2 * verticesBuffer.limit());
+			glBufferSubData(GL_ARRAY_BUFFER, verticesBuffer.limit() * 2, depthsBuffer);
+			
+			glVertexAttribPointer(positionAttrib, voxel ? 3 : 2, GL_SHORT, false, 0, 0);
+			glVertexAttribIPointer(depthAttrib, 1, GL_BYTE, 0, verticesBuffer.limit() * 2);
+			
 			update();
-			render(quads * 4, (voxel ? 0.5 : 1.0) / (1 << (maxDepth - 1)));
+			projection = new Matrix4f()
+					.translate(0, 0, 0)
+					.rotateX((float) Math.toRadians(rotate_x))
+					.rotateY((float) Math.toRadians(rotate_y))
+					.rotateZ((float) Math.toRadians(rotate_z))
+					.scale((float) ((voxel ? 0.5 : 1.0) / (1 << (maxDepth - 1))));
+			projection.get(projectionMatrixBuffer);
+			glUniformMatrix4fv(factorMatrixLoc, false, projectionMatrixBuffer);
+			render(nodes);
 			printFramerate();
 			if (glfwWindowShouldClose(window))
 				running = false;
 			
-			if(voxel) {
-				voxelRoot = new Voxel();
-			} else {
-				pixelRoot = new Pixel();
-			}
+//			if(voxel) {
+//				voxelRoot = new Voxel();
+//			} else {
+//				pixelRoot = new Pixel();
+//			}
 //			makeMovingPacman(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f, System.currentTimeMillis() - startTimer);
-			makeMovingPacman(pixelRoot, maxDepth, 0, -0.5f, -0.5f, System.currentTimeMillis() - startTimer);
-//			frameTimer = System.currentTimeMillis();
-			
-			if(voxel)
-				voxelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, 0, vertices, colors, sizes = new int[] {0, 0});
-			else
-				pixelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, 0, vertices, colors, sizes = new int[] {0, 0});
-			verticesBuffer.clear();
-			verticesBuffer.put(vertices, 0, sizes[0]);
-			verticesBuffer.flip();
-
-			colorsBuffer.clear();
-			colorsBuffer.put(colors, 0, sizes[1]);
-			colorsBuffer.flip();
-//			System.out.println(System.currentTimeMillis() - frameTimer);
-			quads = sizes[1] / 12;
+//			makeMovingPacman(pixelRoot, maxDepth, 0, -0.5f, -0.5f, System.currentTimeMillis() - startTimer);
+//			if(voxel)
+//				voxelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, 0, vertices, colors, lengths = new int[] {0, 0});
+//			else
+//				pixelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, 0, vertices, colors, lengths = new int[] {0, 0});
 		}
 
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_COLOR_ARRAY);
+		
+		shader.clean();
+		shader = null;
+		
+		glDeleteBuffers(vboID);
+		glDeleteVertexArrays(vaoID);
 
 		// Free the window callbacks and destroy the window
 		glfwFreeCallbacks(window);
@@ -244,7 +199,7 @@ public class LWJGLExample implements Runnable {
 		glfwDefaultWindowHints(); // optional, the current window hints are already the default
 		glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE); // the window will stay hidden after creation
 		glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE); // the window will be resizable
-		glfwWindowHint(GLFW_SAMPLES, msaaSamples); // the window will be resizable
+//		glfwWindowHint(GLFW_SAMPLES, msaaSamples); // the window will be resizable
 
 		// Create the window
 		window = glfwCreateWindow(width, height, title, NULL, NULL);
@@ -283,20 +238,14 @@ public class LWJGLExample implements Runnable {
 
 		glEnable(GL_DEPTH_TEST);
 		glMatrixMode(GL_PROJECTION);
-		
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	}
 
-	private void render(int numVertices, double scale) {
+	private void render(int numVertices) {
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 		glLoadIdentity();
 
-		glRotated(rotate_x, 1.0, 0.0, 0.0);
-		glRotated(rotate_y, 0.0, 1.0, 0.0);
-		glRotated(rotate_z, 0.0, 0.0, 1.0);
-		glScaled(scale, scale, scale);
-
-		glDrawArrays(GL_QUADS, 0, numVertices);
+		glDrawArrays(GL_POINTS, 0, numVertices);
 
 		glFlush();
 		glfwSwapBuffers(window);
@@ -709,144 +658,13 @@ public class LWJGLExample implements Runnable {
 class Voxel {
 	Voxel[] children;
 
-	void render(short x, short y, short z, int maxDepth, int treeDepth, short vertices[], byte colors[], int sizes[]) {
+	void render(short x, short y, short z, byte maxDepth, byte treeDepth, short vertices[], byte depths[], int lengths[]) {
 		short nodeSize = (short) (1 << (maxDepth - treeDepth));
 		if (children == null) {
-			short xw = (short) (x + nodeSize), yh = (short) (y + nodeSize), zd = (short) (z + nodeSize);
-//			byte colors[] = {(byte) (Math.random() * 256), (byte) (Math.random() * 256), (byte) (Math.random() * 256)};
-			byte blah = (byte) (Math.random() * 30);
-			byte nodeColors[] = {(byte) (226 + blah), (byte) (226 + blah), 0};
-			// back face
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			
-			// front face
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			
-			// bottom face
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			
-			// top face
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			
-			// left face
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-
-			// right face
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = y;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = zd;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = yh;
-			vertices[sizes[0]++] = z;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
+			vertices[lengths[0]++] = x;
+			vertices[lengths[0]++] = y;
+			vertices[lengths[0]++] = z;
+			depths[lengths[1]++] = (byte) (maxDepth - treeDepth);
 			return;
 		}
 		if(children.length == 0)
@@ -855,35 +673,35 @@ class Voxel {
 		nodeSize >>= 1;
 		short xw = (short) (x + nodeSize), yh = (short) (y + nodeSize), zd = (short) (z + nodeSize);
 		if (children[0] != null) {
-			children[0].render(x, y, z, maxDepth, treeDepth, vertices, colors, sizes);
+			children[0].render(x, y, z, maxDepth, treeDepth, vertices, depths, lengths);
 			children[0] = null;
 		}
 		if (children[1] != null) {
-			children[1].render(x, y, zd, maxDepth, treeDepth, vertices, colors, sizes);
+			children[1].render(x, y, zd, maxDepth, treeDepth, vertices, depths, lengths);
 			children[1] = null;
 		}
 		if (children[2] != null) {
-			children[2].render(x, yh, z, maxDepth, treeDepth, vertices, colors, sizes);
+			children[2].render(x, yh, z, maxDepth, treeDepth, vertices, depths, lengths);
 			children[2] = null;
 		}
 		if (children[3] != null) {
-			children[3].render(x, yh, zd, maxDepth, treeDepth, vertices, colors, sizes);
+			children[3].render(x, yh, zd, maxDepth, treeDepth, vertices, depths, lengths);
 			children[3] = null;
 		}
 		if (children[4] != null) {
-			children[4].render(xw, y, z, maxDepth, treeDepth, vertices, colors, sizes);
+			children[4].render(xw, y, z, maxDepth, treeDepth, vertices, depths, lengths);
 			children[4] = null;
 		}
 		if (children[5] != null) {
-			children[5].render(xw, y, zd, maxDepth, treeDepth, vertices, colors, sizes);
+			children[5].render(xw, y, zd, maxDepth, treeDepth, vertices, depths, lengths);
 			children[5] = null;
 		}
 		if (children[6] != null) {
-			children[6].render(xw, yh, z, maxDepth, treeDepth, vertices, colors, sizes);
+			children[6].render(xw, yh, z, maxDepth, treeDepth, vertices, depths, lengths);
 			children[6] = null;
 		}
 		if (children[7] != null) {
-			children[7].render(xw, yh, zd, maxDepth, treeDepth, vertices, colors, sizes);
+			children[7].render(xw, yh, zd, maxDepth, treeDepth, vertices, depths, lengths);
 			children[7] = null;
 		}
 		children = null;
@@ -893,27 +711,12 @@ class Voxel {
 class Pixel {
 	Pixel[] children;
 
-	void render(short x, short y, int maxDepth, int treeDepth, short vertices[], byte colors[], int sizes[]) {
+	void render(short x, short y, int maxDepth, int treeDepth, short vertices[], byte depths[], int lengths[]) {
 		short nodeSize = (short) (1 << (maxDepth - treeDepth));
 		if (children == null) {
-			short xw = (short) (x + nodeSize), yh = (short) (y + nodeSize);
-			byte nodeColors[] = {(byte) (Math.random() * 256), (byte) (Math.random() * 256), (byte) (Math.random() * 256)};
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = y;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = y;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = xw;
-			vertices[sizes[0]++] = yh;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
-			vertices[sizes[0]++] = x;
-			vertices[sizes[0]++] = yh;
-			System.arraycopy(nodeColors, 0, colors, sizes[1], nodeColors.length);
-			sizes[1] += nodeColors.length;
+			vertices[lengths[0]++] = x;
+			vertices[lengths[0]++] = y;
+			depths[lengths[1]++] = (byte) (maxDepth - treeDepth);
 			return;
 		}
 		if (children.length == 0)
@@ -922,19 +725,19 @@ class Pixel {
 		nodeSize >>= 1;
 		short xw = (short) (x + nodeSize), yh = (short) (y + nodeSize);
 		if (children[0] != null) {
-			children[0].render(x, y, maxDepth, treeDepth, vertices, colors, sizes);
+			children[0].render(x, y, maxDepth, treeDepth, vertices, depths, lengths);
 			children[0] = null;
 		}
 		if (children[1] != null) {
-			children[1].render(x, yh, maxDepth, treeDepth, vertices, colors, sizes);
+			children[1].render(x, yh, maxDepth, treeDepth, vertices, depths, lengths);
 			children[1] = null;
 		}
 		if (children[2] != null) {
-			children[2].render(xw, y, maxDepth, treeDepth, vertices, colors, sizes);
+			children[2].render(xw, y, maxDepth, treeDepth, vertices, depths, lengths);
 			children[2] = null;
 		}
 		if (children[3] != null) {
-			children[3].render(xw, yh, maxDepth, treeDepth, vertices, colors, sizes);
+			children[3].render(xw, yh, maxDepth, treeDepth, vertices, depths, lengths);
 			children[3] = null;
 		}
 		children = null;

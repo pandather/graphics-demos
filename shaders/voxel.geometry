@@ -1,0 +1,52 @@
+#version 460
+
+uniform mat4 FactorMatrix;
+
+layout(points) in;
+layout(triangle_strip, max_vertices=15) out;
+
+in int size[];
+
+void main(void)
+{	
+	ivec4 nearBottomLeft = ivec4(0, 0, 0, 0);
+	ivec4 nearBottomRight = ivec4(size[0], 0, 0, 0);
+	ivec4 nearTopRight = ivec4(size[0], size[0], 0, 0);
+	ivec4 nearTopLeft = ivec4(0, size[0], 0, 0);
+	ivec4 farBottomLeft = ivec4(0, 0, size[0], 0);
+	ivec4 farBottomRight = ivec4(size[0], 0, size[0], 0);
+	ivec4 farTopRight = ivec4(size[0], size[0], size[0], 0);
+	ivec4 farTopLeft = ivec4(0, size[0], size[0], 0);
+	
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + farTopLeft);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + farTopRight);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + nearTopLeft);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + nearTopRight);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + nearBottomRight);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + farTopRight);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + farBottomRight);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + farTopLeft);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + farBottomLeft);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + nearTopLeft);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + nearBottomLeft);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + nearBottomRight);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + farBottomLeft);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + farBottomRight);
+	EmitVertex();
+	gl_Position = FactorMatrix * (gl_in[0].gl_Position + farTopLeft);
+	EmitVertex();
+	EndPrimitive();
+}

@@ -17,7 +17,8 @@
 	<classpathentry kind="lib" path="lib/lwjgl/lwjgl-opengl/lwjgl-opengl-natives-linux.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl/lwjgl-opengl/lwjgl-opengl-natives-macos.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl/lwjgl-opengl/lwjgl-opengl-natives-windows.jar"/>
-	<classpathentry kind="lib" path="lib/lwjgl/lwjgl-opengl/lwjgl-opengl.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl/lwjgl-opengl/lwjgl-opengl.jar" sourcepath="lib/lwjgl/lwjgl-opengl/lwjgl-opengl-sources.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl/lwjgl-vulkan/lwjgl-vulkan.jar"/>
+	<classpathentry kind="lib" path="lib/joml/joml-1.9.9-20180320.181807-2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
