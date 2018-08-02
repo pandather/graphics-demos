@@ -35,7 +35,6 @@ public class Shader {
 			throw new RuntimeException("Could not link shader. Reason: " + glGetProgramInfoLog(programID, 1000));
 		}
 		
-		// perform general validation that the program is usable
 		glValidateProgram(programID);
 		
 		if (glGetProgrami(programID, GL_VALIDATE_STATUS) == GL_FALSE) {

@@ -93,9 +93,9 @@ public class LWJGLExample implements Runnable {
 		
 		Shader shader;
 		if(voxel)
-			shader = new Shader("shaders/voxel.vertex", "shaders/voxel.geometry", "shaders/both.fragment");
+			shader = new Shader("res/shaders/voxel.vertex", "res/shaders/voxel.geometry", "res/shaders/both.fragment");
 		else
-			shader = new Shader("shaders/pixel.vertex", "shaders/pixel.geometry", "shaders/both.fragment");
+			shader = new Shader("res/shaders/pixel.vertex", "res/shaders/pixel.geometry", "res/shaders/both.fragment");
 		glUseProgram(shader.getProgramID());
 		
 		int positionAttrib = glGetAttribLocation(shader.getProgramID(), "position");
