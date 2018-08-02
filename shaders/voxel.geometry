@@ -1,4 +1,4 @@
-#version 460
+#version 150 core
 
 uniform mat4 FactorMatrix;
 
@@ -6,9 +6,14 @@ layout(points) in;
 layout(triangle_strip, max_vertices=15) out;
 
 in int size[];
+in vec4 color[];
+
+out vec4 outColor;
 
 void main(void)
 {	
+	outColor = color[0];
+
 	ivec4 nearBottomLeft = ivec4(0, 0, 0, 0);
 	ivec4 nearBottomRight = ivec4(size[0], 0, 0, 0);
 	ivec4 nearTopRight = ivec4(size[0], size[0], 0, 0);

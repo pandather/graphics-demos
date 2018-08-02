@@ -49,6 +49,7 @@ public class Shader {
 		glCompileShader(handle);
 		if(glGetShaderi(handle, GL_COMPILE_STATUS) == GL_FALSE) {
 			System.out.println((shaderType == GL_VERTEX_SHADER ? "Vertex" : shaderType == GL_GEOMETRY_SHADER ?  "Geometry" : "Fragment") + " shader compiled unsuccessfully.");
+			System.out.println(glGetShaderInfoLog(handle));
 			throw new RuntimeException((shaderType == GL_VERTEX_SHADER ? "Vertex" : shaderType == GL_GEOMETRY_SHADER ?  "Geometry" : "Fragment") + " shader compiled unsuccessfully.");
 		}
 		return handle;

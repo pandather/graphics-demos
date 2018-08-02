@@ -4,7 +4,6 @@ package gui;
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.GL_MULTISAMPLE;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -39,11 +38,11 @@ public class LWJGLExample implements Runnable {
 	
 	long startTimer;
 
-	private double rotate_x = 0;
+	private double rotate_x = 90;
 	private double rotate_y = 0;
 	private double rotate_z = 0;
 	
-	private byte maxDepth = 11;
+	private byte maxDepth = 7;
 	private boolean voxel = true;
 
 	public void start() {
@@ -58,8 +57,8 @@ public class LWJGLExample implements Runnable {
 		frameTimer = System.currentTimeMillis();
 		
 		Voxel voxelRoot = new Voxel();
-//		makeFullCube(voxelRoot, maxDepth, 0);
-		makeSphere(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f);
+		makeFullCube(voxelRoot, maxDepth, 0);
+//		makeSphere(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f);
 //		makePacman(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f);
 //		makeGatling(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f, 9, 0.3f, 0.03f, 0.15f, 0.03f, 0.03f);
 //		makeDoubleHelix(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f, 0.1f, 0.1f);
@@ -69,17 +68,19 @@ public class LWJGLExample implements Runnable {
 //		makeCircle(pixelRoot, maxDepth, 0, -0.5f, -0.5f);
 //		makePacman(pixelRoot, maxDepth, 0, -0.5f, -0.5f);
 		
-		short vertices[] = new short[(int) (Integer.MAX_VALUE * ((voxel ? 6.0 : 4.0) / (voxel ? 9 : 7) / 2)) / 2];
+		short vertices[] = new short[(int) (Integer.MAX_VALUE / 10)];
 		byte depths[] = new byte[vertices.length / (voxel ? 3 : 2)];
+		byte types[] = new byte[vertices.length / (voxel ? 3 : 2)];
 		int lengths[] = null;
 		
 		if(voxel)
-			voxelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, (byte) 0, vertices, depths, lengths = new int[] {0, 0});
+			voxelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, (byte) 0, vertices, depths, types, lengths = new int[3]);
 		else
-			pixelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, (byte) 0, vertices, depths, lengths = new int[] {0, 0});
+			pixelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, (byte) 0, vertices, depths, types, lengths = new int[3]);
 				
 		ShortBuffer verticesBuffer = BufferUtils.createShortBuffer(vertices.length);
 		ByteBuffer depthsBuffer = BufferUtils.createByteBuffer(depths.length);
+		ByteBuffer typesBuffer = BufferUtils.createByteBuffer(types.length);
 		
 		int nodes = lengths[1];
 
@@ -89,49 +90,49 @@ public class LWJGLExample implements Runnable {
 		glBindVertexArray(vaoID);
 		
 		int vboID = glGenBuffers();
-		glBindBuffer(GL_ARRAY_BUFFER, vboID);
-		glBufferData(GL_ARRAY_BUFFER, verticesBuffer.limit() * 2 + depthsBuffer.limit(), GL_DYNAMIC_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, verticesBuffer);
-		glBufferSubData(GL_ARRAY_BUFFER, verticesBuffer.limit() * 2, depthsBuffer);
 		
 		Shader shader;
 		if(voxel)
 			shader = new Shader("shaders/voxel.vertex", "shaders/voxel.geometry", "shaders/both.fragment");
 		else
 			shader = new Shader("shaders/pixel.vertex", "shaders/pixel.geometry", "shaders/both.fragment");
-		
 		glUseProgram(shader.getProgramID());
+		
 		int positionAttrib = glGetAttribLocation(shader.getProgramID(), "position");
 		glEnableVertexAttribArray(positionAttrib);
-		glVertexAttribPointer(positionAttrib, voxel ? 3 : 2, GL_SHORT, false, 0, 0);
-		
 		int depthAttrib = glGetAttribLocation(shader.getProgramID(), "depth");
 		glEnableVertexAttribArray(depthAttrib);
-		glVertexAttribIPointer(depthAttrib, 1, GL_BYTE, 0, verticesBuffer.limit() * 2);
+		int typeAttrib = glGetAttribLocation(shader.getProgramID(), "type");
+		glEnableVertexAttribArray(typeAttrib);
 		
-		frameTimer = startTimer = System.currentTimeMillis();
 		Matrix4f projection;
 		FloatBuffer projectionMatrixBuffer = BufferUtils.createFloatBuffer(16);
 		int factorMatrixLoc = glGetUniformLocation(shader.getProgramID(), "FactorMatrix");
-
+		
+		frameTimer = startTimer = System.currentTimeMillis();
+		
 		while (running) {
 			nodes = lengths[1];
 			
 			verticesBuffer.clear();
 			verticesBuffer.put(vertices, 0, lengths[0]);
 			verticesBuffer.flip();
-			
 			depthsBuffer.clear();
 			depthsBuffer.put(depths, 0, lengths[1]);
 			depthsBuffer.flip();
+			typesBuffer.clear();
+			typesBuffer.put(types, 0, lengths[1]);
+			typesBuffer.flip();
 			
 			glBindBuffer(GL_ARRAY_BUFFER, vboID);
-			glBufferData(GL_ARRAY_BUFFER, verticesBuffer.limit() * 2 + depthsBuffer.limit(), GL_DYNAMIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, verticesBuffer.limit() * 2 + depthsBuffer.limit() + typesBuffer.limit(), GL_DYNAMIC_DRAW);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, verticesBuffer);
 			glBufferSubData(GL_ARRAY_BUFFER, verticesBuffer.limit() * 2, depthsBuffer);
+			glBufferSubData(GL_ARRAY_BUFFER, verticesBuffer.limit() * 2 + depthsBuffer.limit(), typesBuffer);
 			
 			glVertexAttribPointer(positionAttrib, voxel ? 3 : 2, GL_SHORT, false, 0, 0);
-			glVertexAttribIPointer(depthAttrib, 1, GL_BYTE, 0, verticesBuffer.limit() * 2);
+			glVertexAttribIPointer(depthAttrib, 1, GL_UNSIGNED_BYTE, 0, verticesBuffer.limit() * 2);
+			glVertexAttribIPointer(typeAttrib, 1, GL_UNSIGNED_BYTE, 0, verticesBuffer.limit() * 2 + depthsBuffer.limit());
 			
 			update();
 			projection = new Matrix4f()
@@ -152,12 +153,18 @@ public class LWJGLExample implements Runnable {
 //			} else {
 //				pixelRoot = new Pixel();
 //			}
+//			frameTimer = System.currentTimeMillis();
 //			makeMovingPacman(voxelRoot, maxDepth, 0, -0.5f, -0.5f, -0.5f, System.currentTimeMillis() - startTimer);
 //			makeMovingPacman(pixelRoot, maxDepth, 0, -0.5f, -0.5f, System.currentTimeMillis() - startTimer);
+//			makeCircle(pixelRoot, maxDepth, 0, -0.5f, -0.5f);
+//			System.out.println("Model Generation: " + (System.currentTimeMillis() - frameTimer));
+			
+//			frameTimer = System.currentTimeMillis();
 //			if(voxel)
-//				voxelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, 0, vertices, colors, lengths = new int[] {0, 0});
+//				voxelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, (byte) 0, vertices, depths, types, lengths = new int[3]);
 //			else
-//				pixelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, 0, vertices, colors, lengths = new int[] {0, 0});
+//				pixelRoot.render((short) -(1 << (maxDepth - 1)), (short) -(1 << (maxDepth - 1)), maxDepth, (byte) 0, vertices, depths, types, lengths = new int[3]);
+//			System.out.println((voxel ? "Oc" : "Quad") + "tree Render: " + (System.currentTimeMillis() - frameTimer));
 		}
 
 		
@@ -199,6 +206,9 @@ public class LWJGLExample implements Runnable {
 		glfwDefaultWindowHints(); // optional, the current window hints are already the default
 		glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE); // the window will stay hidden after creation
 		glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE); // the window will be resizable
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 //		glfwWindowHint(GLFW_SAMPLES, msaaSamples); // the window will be resizable
 
 		// Create the window
@@ -237,7 +247,9 @@ public class LWJGLExample implements Runnable {
 		GL.createCapabilities();
 
 		glEnable(GL_DEPTH_TEST);
-		glMatrixMode(GL_PROJECTION);
+		
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 
 	private void render(int numVertices) {
@@ -658,13 +670,14 @@ public class LWJGLExample implements Runnable {
 class Voxel {
 	Voxel[] children;
 
-	void render(short x, short y, short z, byte maxDepth, byte treeDepth, short vertices[], byte depths[], int lengths[]) {
+	void render(short x, short y, short z, byte maxDepth, byte treeDepth, short vertices[], byte depths[], byte types[], int lengths[]) {
 		short nodeSize = (short) (1 << (maxDepth - treeDepth));
 		if (children == null) {
 			vertices[lengths[0]++] = x;
 			vertices[lengths[0]++] = y;
 			vertices[lengths[0]++] = z;
 			depths[lengths[1]++] = (byte) (maxDepth - treeDepth);
+			types[lengths[2]++] = (byte) (Math.random() * 256);
 			return;
 		}
 		if(children.length == 0)
@@ -673,50 +686,51 @@ class Voxel {
 		nodeSize >>= 1;
 		short xw = (short) (x + nodeSize), yh = (short) (y + nodeSize), zd = (short) (z + nodeSize);
 		if (children[0] != null) {
-			children[0].render(x, y, z, maxDepth, treeDepth, vertices, depths, lengths);
-			children[0] = null;
+			children[0].render(x, y, z, maxDepth, treeDepth, vertices, depths, types, lengths);
+//			children[0] = null;
 		}
 		if (children[1] != null) {
-			children[1].render(x, y, zd, maxDepth, treeDepth, vertices, depths, lengths);
-			children[1] = null;
+			children[1].render(x, y, zd, maxDepth, treeDepth, vertices, depths, types, lengths);
+//			children[1] = null;
 		}
 		if (children[2] != null) {
-			children[2].render(x, yh, z, maxDepth, treeDepth, vertices, depths, lengths);
-			children[2] = null;
+			children[2].render(x, yh, z, maxDepth, treeDepth, vertices, depths, types, lengths);
+//			children[2] = null;
 		}
 		if (children[3] != null) {
-			children[3].render(x, yh, zd, maxDepth, treeDepth, vertices, depths, lengths);
-			children[3] = null;
+			children[3].render(x, yh, zd, maxDepth, treeDepth, vertices, depths, types, lengths);
+//			children[3] = null;
 		}
 		if (children[4] != null) {
-			children[4].render(xw, y, z, maxDepth, treeDepth, vertices, depths, lengths);
-			children[4] = null;
+			children[4].render(xw, y, z, maxDepth, treeDepth, vertices, depths, types, lengths);
+//			children[4] = null;
 		}
 		if (children[5] != null) {
-			children[5].render(xw, y, zd, maxDepth, treeDepth, vertices, depths, lengths);
-			children[5] = null;
+			children[5].render(xw, y, zd, maxDepth, treeDepth, vertices, depths, types, lengths);
+//			children[5] = null;
 		}
 		if (children[6] != null) {
-			children[6].render(xw, yh, z, maxDepth, treeDepth, vertices, depths, lengths);
-			children[6] = null;
+			children[6].render(xw, yh, z, maxDepth, treeDepth, vertices, depths, types, lengths);
+//			children[6] = null;
 		}
 		if (children[7] != null) {
-			children[7].render(xw, yh, zd, maxDepth, treeDepth, vertices, depths, lengths);
-			children[7] = null;
+			children[7].render(xw, yh, zd, maxDepth, treeDepth, vertices, depths, types, lengths);
+//			children[7] = null;
 		}
-		children = null;
+//		children = null;
 	}
 }
 	
 class Pixel {
 	Pixel[] children;
 
-	void render(short x, short y, int maxDepth, int treeDepth, short vertices[], byte depths[], int lengths[]) {
+	void render(short x, short y, byte maxDepth, byte treeDepth, short vertices[], byte depths[], byte types[], int lengths[]) {
 		short nodeSize = (short) (1 << (maxDepth - treeDepth));
 		if (children == null) {
 			vertices[lengths[0]++] = x;
 			vertices[lengths[0]++] = y;
 			depths[lengths[1]++] = (byte) (maxDepth - treeDepth);
+			types[lengths[2]++] = (byte) (Math.random() * 256);
 			return;
 		}
 		if (children.length == 0)
@@ -725,19 +739,19 @@ class Pixel {
 		nodeSize >>= 1;
 		short xw = (short) (x + nodeSize), yh = (short) (y + nodeSize);
 		if (children[0] != null) {
-			children[0].render(x, y, maxDepth, treeDepth, vertices, depths, lengths);
+			children[0].render(x, y, maxDepth, treeDepth, vertices, depths, types, lengths);
 			children[0] = null;
 		}
 		if (children[1] != null) {
-			children[1].render(x, yh, maxDepth, treeDepth, vertices, depths, lengths);
+			children[1].render(x, yh, maxDepth, treeDepth, vertices, depths, types, lengths);
 			children[1] = null;
 		}
 		if (children[2] != null) {
-			children[2].render(xw, y, maxDepth, treeDepth, vertices, depths, lengths);
+			children[2].render(xw, y, maxDepth, treeDepth, vertices, depths, types, lengths);
 			children[2] = null;
 		}
 		if (children[3] != null) {
-			children[3].render(xw, yh, maxDepth, treeDepth, vertices, depths, lengths);
+			children[3].render(xw, yh, maxDepth, treeDepth, vertices, depths, types, lengths);
 			children[3] = null;
 		}
 		children = null;

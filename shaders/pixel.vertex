@@ -1,12 +1,24 @@
-#version 460
+#version 150 core
 
 in vec2 position;
 in int depth;
+in int type;
 
 out int size;
+out vec4 color;
 
 void main()
 {
 	size = 1 << depth;
+	
+	float r = 0.0;
+	float g = 0.0;
+	float b = 0.0;
+	float a = 1.0;
+	r = type / 255.0;
+	g = r;
+	b = g;
+	color = vec4(r, g, b, a);
+	
     gl_Position = vec4(position, 0.0, 1.0);
 }
