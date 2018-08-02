@@ -1,23 +1,23 @@
-#version 150 core
+#version 330 core
 
 uniform mat4 FactorMatrix;
 
 layout(points) in;
 layout(triangle_strip, max_vertices=4) out;
 
-in int size[];
-in vec4 color[];
+in int geo_size[];
+in vec4 geo_color[];
 
-out vec4 outColor;
+out vec4 frag_color;
 
 void main(void)
 {	
-	outColor = color[0];
+	frag_color = geo_color[0];
 	
 	ivec4 bottomLeft = ivec4(0, 0, 0, 0);
-	ivec4 bottomRight = ivec4(size[0], 0, 0, 0);
-	ivec4 topRight = ivec4(size[0], size[0], 0, 0);
-	ivec4 topLeft = ivec4(0, size[0], 0, 0);
+	ivec4 bottomRight = ivec4(geo_size[0], 0, 0, 0);
+	ivec4 topRight = ivec4(geo_size[0], geo_size[0], 0, 0);
+	ivec4 topLeft = ivec4(0, geo_size[0], 0, 0);
 	
 	gl_Position = FactorMatrix * (gl_in[0].gl_Position + topLeft);
 	EmitVertex();

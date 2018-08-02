@@ -31,15 +31,16 @@ public class Shader {
 		glLinkProgram(programID);
 		
 		if (glGetProgrami(programID, GL_LINK_STATUS) == GL_FALSE) {
-			System.out.println("could not link shader. Reason: " + glGetProgramInfoLog(programID, 1000));
-			throw new RuntimeException("could not link shader. Reason: " + glGetProgramInfoLog(programID, 1000));
+			System.out.println("Could not link shader. Reason: " + glGetProgramInfoLog(programID, 1000));
+			throw new RuntimeException("Could not link shader. Reason: " + glGetProgramInfoLog(programID, 1000));
 		}
 		
 		// perform general validation that the program is usable
 		glValidateProgram(programID);
 		
 		if (glGetProgrami(programID, GL_VALIDATE_STATUS) == GL_FALSE) {
-			throw new RuntimeException("could not validate shader. Reason: " + glGetProgramInfoLog(programID, 1000));            
+			System.out.println("Could not validate shader. Reason: " + glGetProgramInfoLog(programID, 1000));
+			throw new RuntimeException("Could not validate shader. Reason: " + glGetProgramInfoLog(programID, 1000));            
 		}
 	}
 	

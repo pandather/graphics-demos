@@ -207,7 +207,7 @@ public class LWJGLExample implements Runnable {
 		glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE); // the window will stay hidden after creation
 		glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE); // the window will be resizable
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 //		glfwWindowHint(GLFW_SAMPLES, msaaSamples); // the window will be resizable
 
@@ -247,15 +247,11 @@ public class LWJGLExample implements Runnable {
 		GL.createCapabilities();
 
 		glEnable(GL_DEPTH_TEST);
-		
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 
 	private void render(int numVertices) {
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
-		glLoadIdentity();
 
 		glDrawArrays(GL_POINTS, 0, numVertices);
 
